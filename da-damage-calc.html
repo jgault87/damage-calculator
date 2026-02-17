@@ -576,7 +576,7 @@
       <div class="toggle-row">
         <label class="toggle-label" id="pveLabel" style="color:var(--positive)">PvE</label>
         <label class="toggle-switch">
-          <input type="checkbox" id="pvpToggle" onchange="onPvPToggle()">
+          <input type="checkbox" id="pvpToggle">
           <div class="toggle-track"></div>
           <div class="toggle-thumb"></div>
         </label>
@@ -591,7 +591,7 @@
         <div class="toggle-row" style="margin-bottom:0">
           <label class="toggle-label" id="bodyLabel" style="color:var(--positive)">Body Shot</label>
           <label class="toggle-switch">
-            <input type="checkbox" id="headShotToggle" onchange="calculate()">
+            <input type="checkbox" id="headShotToggle">
             <div class="toggle-track"></div>
             <div class="toggle-thumb"></div>
           </label>
@@ -667,32 +667,32 @@
 
       <label style="margin-bottom:0.4rem">Damage Type</label>
       <div class="dmg-types" id="dmgTypes">
-        <button class="dmg-btn selected" data-type="blade" onclick="selectDmgType(this)" style="border-color:var(--blade);color:var(--blade)">
+        <button class="dmg-btn selected" data-type="blade" style="border-color:var(--blade);color:var(--blade)">
           <span class="btn-icon">⚔</span>
           <span>Blade</span>
         </button>
-        <button class="dmg-btn" data-type="lightdart" onclick="selectDmgType(this)" style="">
+        <button class="dmg-btn" data-type="lightdart" style="">
           <span class="btn-icon">🎯</span>
           <span>Light Dart</span>
         </button>
-        <button class="dmg-btn" data-type="heavydart" onclick="selectDmgType(this)">
+        <button class="dmg-btn" data-type="heavydart">
           <span class="btn-icon">🔫</span>
           <span>Heavy Dart</span>
         </button>
-        <button class="dmg-btn" data-type="concussive" onclick="selectDmgType(this)">
+        <button class="dmg-btn" data-type="concussive">
           <span class="btn-icon">💣</span>
           <span>Concussive</span>
         </button>
-        <button class="dmg-btn" data-type="energy" onclick="selectDmgType(this)">
+        <button class="dmg-btn" data-type="energy">
           <span class="btn-icon">⚡</span>
           <span>Energy</span>
         </button>
-        <button class="dmg-btn" data-type="fire" onclick="selectDmgType(this)">
+        <button class="dmg-btn" data-type="fire">
           <span class="btn-icon">🔥</span>
           <span>Fire</span>
           <span class="btn-sub">Impact + DoT</span>
         </button>
-        <button class="dmg-btn" data-type="poison" onclick="selectDmgType(this)">
+        <button class="dmg-btn" data-type="poison">
           <span class="btn-icon">☠</span>
           <span>Poison</span>
           <span class="btn-sub">DoT only</span>
@@ -849,264 +849,6 @@
   <a href="https://duneawakening.com" target="_blank">duneawakening.com</a>
 </footer>
 
-<script>
-// ─── State ───────────────────────────────────────────────────────────────────
-let selectedType = 'blade';
-
-const DAMAGE_TYPES = {
-  blade:      { label: 'Blade',       mitKey: 'mit_blade',       hasDot: false, pureDoT: false, dotKey: null,           color: '#e84040' },
-  lightdart:  { label: 'Light Dart',  mitKey: 'mit_lightdart',   hasDot: false, pureDoT: false, dotKey: null,           color: '#40a0e8' },
-  heavydart:  { label: 'Heavy Dart',  mitKey: 'mit_heavydart',   hasDot: false, pureDoT: false, dotKey: null,           color: '#1a6fbe' },
-  concussive: { label: 'Concussive',  mitKey: 'mit_concussive',  hasDot: false, pureDoT: false, dotKey: null,           color: '#e86030' },
-  energy:     { label: 'Energy',      mitKey: 'mit_energy',      hasDot: false, pureDoT: false, dotKey: null,             color: '#a040e8' },
-  fire:       { label: 'Fire',        mitKey: 'mit_fire_impact', hasDot: true,  pureDoT: false, dotKey: 'mit_fire_dot',  color: '#ff5520' },
-  poison:     { label: 'Poison',      mitKey: null,              hasDot: true,  pureDoT: true,  dotKey: 'mit_poison',    color: '#60cc30' },
-};
-
-// ─── Helpers ──────────────────────────────────────────────────────────────────
-function getVal(id) { return parseFloat(document.getElementById(id).value) || 0; }
-
-function fmt(n, dec = 1) {
-  if (isNaN(n) || !isFinite(n)) return '—';
-  return n.toFixed(dec);
-}
-
-function selectDmgType(btn) {
-  document.querySelectorAll('.dmg-btn').forEach(b => {
-    b.classList.remove('selected');
-    b.style.borderColor = '';
-    b.style.color = '';
-    b.style.background = '';
-  });
-  const type = btn.dataset.type;
-  const info = DAMAGE_TYPES[type];
-  btn.classList.add('selected');
-  btn.style.borderColor = info.color;
-  btn.style.color = '#fff';
-  btn.style.background = `${info.color}22`;
-  selectedType = type;
-
-  // Show/hide split UI
-  const splitWrap = document.getElementById('dotSplitWrap');
-  const poisonNote = document.getElementById('poisonNote');
-  splitWrap.style.display = (info.hasDot && !info.pureDoT) ? 'block' : 'none';
-  poisonNote.style.display = info.pureDoT ? 'block' : 'none';
-
-  calculate();
-}
-
-function onPvPToggle() {
-  const checked = document.getElementById('pvpToggle').checked;
-  document.getElementById('pvpSub').classList.toggle('visible', checked);
-  document.getElementById('pvpLabel').classList.toggle('active', checked);
-  calculate();
-}
-
-// sync dot split so impact+dot = 100
-document.getElementById('dotSplitImpact').addEventListener('input', function() {
-  const v = Math.min(100, Math.max(0, parseFloat(this.value) || 0));
-  document.getElementById('dotSplitDot').value = (100 - v).toFixed(0);
-  calculate();
-});
-
-// ─── Main Calculation ─────────────────────────────────────────────────────────
-function calculate() {
-  const armor      = getVal('armorValue');
-  const rawDamage  = getVal('rawDamage');
-  const pvpEnabled = document.getElementById('pvpToggle').checked;
-  const isHeadshot = pvpEnabled && document.getElementById('headShotToggle').checked;
-  // Poison / concussive / AoE can't headshot — force body
-  const canHeadshot = !['poison','concussive'].includes(selectedType);
-  const pvpReductionPct = pvpEnabled ? (isHeadshot && canHeadshot ? 60 : 40) : 0;
-
-  const typeInfo = DAMAGE_TYPES[selectedType];
-
-  // Armor DR
-  const armorDR = armor / (armor + 500);
-  const armorDRpct = armorDR * 100;
-
-  // Update armor display
-  document.getElementById('armorPct').textContent = armorDRpct.toFixed(1) + '%';
-  document.getElementById('ehpMultiplier').textContent = (1 / (1 - armorDR)).toFixed(2) + '×';
-  // Bar: scale so 90% DR = end of bar
-  const barPct = Math.min(100, armorDRpct / 90 * 100);
-  document.getElementById('drBarFill').style.width = barPct + '%';
-
-  // PvP multiplier (applies to raw damage BEFORE armor)
-  const pvpMult = pvpEnabled ? (1 - pvpReductionPct / 100) : 1;
-
-  // Type mitigation
-  const typeMit = typeInfo.mitKey ? getVal(typeInfo.mitKey) / 100 : 0;
-
-  // ── IMPACT damage ──
-  let impactDamage = 0;
-  let impactRaw = rawDamage;
-
-  if (!typeInfo.pureDoT) {
-    // If split type, impact portion
-    const impactPortion = (typeInfo.hasDot && !typeInfo.pureDoT)
-      ? getVal('dotSplitImpact') / 100
-      : 1;
-
-    impactRaw = rawDamage * impactPortion;
-
-    // Apply PvP
-    const afterPvP = impactRaw * pvpMult;
-
-    // Apply armor DR (fire/energy/poison impact DOES go through armor for the hit)
-    const afterArmor = afterPvP * (1 - armorDR);
-
-    // Apply type mitigation
-    const afterType = afterArmor * (1 - typeMit);
-
-    impactDamage = afterType;
-  }
-
-  // ── DoT damage ──
-  let dotRaw = 0, dotReduced = 0, dotResistPct = 0;
-  let showDot = typeInfo.hasDot;
-
-  if (typeInfo.hasDot) {
-    const dotPortion = typeInfo.pureDoT
-      ? 1
-      : (getVal('dotSplitDot') / 100);
-
-    dotRaw = rawDamage * dotPortion;
-    const dotResist = typeInfo.dotKey ? getVal(typeInfo.dotKey) / 100 : 0;
-    dotResistPct = dotResist * 100;
-
-    // DoT: PvP still applies (but NOT armor DR)
-    const afterPvP = dotRaw * pvpMult;
-    dotReduced = afterPvP * (1 - dotResist);
-  }
-
-  // ── Combined effective DR (for non-pure-dot) ──
-  let effectiveDRpct = 0;
-  if (!typeInfo.pureDoT) {
-    const effective = 1 - (impactDamage / ((rawDamage * (typeInfo.hasDot ? getVal('dotSplitImpact')/100 : 1)) * pvpMult + 0.0001));
-    effectiveDRpct = effective * 100;
-  }
-
-  // Total damage taken (impact + one tick of DoT for display)
-  const totalDamage = typeInfo.pureDoT ? dotReduced : impactDamage;
-  const damageBlocked = typeInfo.pureDoT
-    ? (rawDamage - dotReduced)
-    : (rawDamage * (typeInfo.hasDot ? getVal('dotSplitImpact')/100 : 1)) * pvpMult - impactDamage;
-
-  // EHP (based on 100 HP, impact only)
-  const ehp = typeInfo.pureDoT
-    ? (100 / Math.max(0.001, dotReduced / rawDamage))
-    : (100 / Math.max(0.001, impactDamage / (rawDamage * (typeInfo.hasDot ? getVal('dotSplitImpact')/100 : 1)) ));
-
-  // ── Update Results ──
-  document.getElementById('resDamageTaken').textContent = fmt(totalDamage);
-  document.getElementById('resDamageSub').textContent = typeInfo.pureDoT ? 'per DoT tick' : 'per hit';
-
-  document.getElementById('resTotalDR').textContent = typeInfo.pureDoT
-    ? fmt(dotResistPct) + '%'
-    : fmt(effectiveDRpct) + '%';
-
-  document.getElementById('resDamageBlocked').textContent = fmt(damageBlocked);
-  document.getElementById('resEHP').textContent = fmt(ehp, 0);
-  document.getElementById('resEHPSub').textContent = 'effective HP vs this type';
-
-  // DoT section
-  document.getElementById('dotSection').classList.toggle('visible', showDot);
-  if (showDot) {
-    document.getElementById('dotRawTick').textContent = fmt(dotRaw * pvpMult);
-    document.getElementById('dotReducedTick').textContent = fmt(dotReduced);
-    document.getElementById('dotResistPct').textContent = fmt(dotResistPct) + '%';
-    const dotColor = selectedType === 'poison' ? '#60cc30'
-                   : selectedType === 'energy' ? '#a040e8'
-                   : '#ff5520';
-    document.getElementById('dotSection').style.borderColor = dotColor + '44';
-    document.getElementById('dotRawTick').style.color = dotColor;
-  }
-
-  // ── Breakdown ──
-  const steps = [];
-
-  if (pvpEnabled) {
-    const shotLabel = (isHeadshot && canHeadshot) ? 'Headshot (−60%)' : 'Body Shot (−40%)';
-    steps.push({
-      label: `PvP reduction — ${shotLabel}`,
-      eq: `${fmt(rawDamage)} × ${fmt(pvpMult * 100)}% = ${fmt(rawDamage * pvpMult)}`,
-      value: fmt(rawDamage * pvpMult)
-    });
-  }
-
-  if (!typeInfo.pureDoT) {
-    const impactAfterPvP = rawDamage * (typeInfo.hasDot ? getVal('dotSplitImpact') / 100 : 1) * pvpMult;
-    steps.push({
-      label: `Armor DR (${fmt(armorDRpct)}%)`,
-      eq: `${fmt(impactAfterPvP)} × ${fmt(1 - armorDR, 3)} = ${fmt(impactAfterPvP * (1 - armorDR))}`,
-      value: fmt(impactAfterPvP * (1 - armorDR))
-    });
-
-    if (Math.abs(typeMit) > 0.0001) {
-      const afterArmor2 = impactAfterPvP * (1 - armorDR);
-      steps.push({
-        label: `${typeInfo.label} mitigation (${typeMit >= 0 ? '-' : '+'}${fmt(Math.abs(typeMit * 100))}%)`,
-        eq: `${fmt(afterArmor2)} × ${fmt(1 - typeMit, 3)} = ${fmt(afterArmor2 * (1 - typeMit))}`,
-        value: fmt(afterArmor2 * (1 - typeMit))
-      });
-    }
-
-    steps.push({
-      label: '⟶ Impact damage taken',
-      eq: '',
-      value: fmt(impactDamage),
-      highlight: true
-    });
-  }
-
-  if (showDot) {
-    const dotAfterPvP = rawDamage * (typeInfo.pureDoT ? 1 : getVal('dotSplitDot') / 100) * pvpMult;
-    steps.push({
-      label: 'DoT: Armor DR skipped',
-      eq: `DoT ${fmt(dotAfterPvP)} (armor DR does not apply)`,
-      value: ''
-    });
-    if (dotResistPct !== 0) {
-      steps.push({
-        label: `DoT resistance (${fmt(dotResistPct)}%)`,
-        eq: `${fmt(dotAfterPvP)} × ${fmt(1 - dotResistPct / 100, 3)} = ${fmt(dotReduced)}`,
-        value: fmt(dotReduced)
-      });
-    }
-    steps.push({
-      label: '⟶ DoT damage per tick',
-      eq: '',
-      value: fmt(dotReduced),
-      highlight: true,
-      dotStyle: true
-    });
-  }
-
-  const stepsHTML = steps.map(s => `
-    <div class="breakdown-step">
-      <span class="step-arrow">▶</span>
-      <span class="step-label" style="${s.highlight ? 'color:var(--text-primary);font-weight:600' : ''}">${s.label}</span>
-      <span class="step-eq">${s.eq}</span>
-      <span class="step-value" style="${s.dotStyle ? 'color:var(--fire)' : s.highlight ? 'color:var(--amber-glow)' : ''}">${s.value}</span>
-    </div>
-  `).join('');
-  document.getElementById('breakdownSteps').innerHTML = stepsHTML;
-}
-
-// ─── Live update on any input change ─────────────────────────────────────────
-document.querySelectorAll('input[type="number"]').forEach(el => {
-  el.addEventListener('input', calculate);
-});
-
-// ─── Init ─────────────────────────────────────────────────────────────────────
-// Select blade button visually
-const bladeBtn = document.querySelector('[data-type="blade"]');
-bladeBtn.style.borderColor = '#e84040';
-bladeBtn.style.color = '#fff';
-bladeBtn.style.background = '#e8404022';
-
-calculate();
-</script>
+<script src="js/main.js"></script>
 </body>
 </html>
