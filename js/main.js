@@ -85,6 +85,7 @@ function calculate() {
 
   const pvpMult = pvpEnabled ? (1 - pvpReductionPct / 100) : 1;
   const typeMit = typeInfo.mitKey ? getVal(typeInfo.mitKey) / 100 : 0;
+  const specDR = getVal('specDR') / 100;
 
   let impactDamage = 0;
   let impactRaw = rawDamage;
@@ -96,7 +97,8 @@ function calculate() {
     impactRaw = rawDamage * impactPortion;
     const afterPvP = impactRaw * pvpMult;
     const afterArmor = afterPvP * (1 - armorDR);
-    impactDamage = afterArmor * (1 - typeMit);
+    const afterType = afterArmor * (1 - typeMit);
+    impactDamage = afterType * (1 - specDR);
   }
 
   let dotRaw = 0, dotReduced = 0, dotResistPct = 0;
@@ -108,7 +110,7 @@ function calculate() {
     const dotResist = typeInfo.dotKey ? getVal(typeInfo.dotKey) / 100 : 0;
     dotResistPct = dotResist * 100;
     const afterPvP = dotRaw * pvpMult;
-    dotReduced = afterPvP * (1 - dotResist);
+    dotReduced = afterPvP * (1 - dotResist) * (1 - specDR);
   }
 
   let effectiveDRpct = 0;
@@ -179,6 +181,14 @@ function calculate() {
         value: fmt(afterArmor2 * (1 - typeMit)),
       });
     }
+    if (specDR > 0.0001) {
+      const beforeSpec = impactAfterPvP * (1 - armorDR) * (1 - typeMit);
+      steps.push({
+        label: `Combat Spec DR (−${fmt(specDR * 100)}%)`,
+        eq: `${fmt(beforeSpec)} × ${fmt(1 - specDR, 3)} = ${fmt(beforeSpec * (1 - specDR))}`,
+        value: fmt(beforeSpec * (1 - specDR)),
+      });
+    }
     steps.push({
       label: '⟶ Impact damage taken',
       eq: '',
@@ -194,9 +204,18 @@ function calculate() {
       value: '',
     });
     if (dotResistPct !== 0) {
+      const dotBeforeSpec = dotAfterPvP * (1 - dotResistPct / 100);
       steps.push({
         label: `DoT resistance (${fmt(dotResistPct)}%)`,
-        eq: `${fmt(dotAfterPvP)} × ${fmt(1 - dotResistPct / 100, 3)} = ${fmt(dotReduced)}`,
+        eq: `${fmt(dotAfterPvP)} × ${fmt(1 - dotResistPct / 100, 3)} = ${fmt(dotBeforeSpec)}`,
+        value: fmt(dotBeforeSpec),
+      });
+    }
+    if (specDR > 0.0001) {
+      const dotBeforeSpec = dotAfterPvP * (1 - dotResistPct / 100);
+      steps.push({
+        label: `Combat Spec DR (−${fmt(specDR * 100)}%)`,
+        eq: `${fmt(dotBeforeSpec)} × ${fmt(1 - specDR, 3)} = ${fmt(dotReduced)}`,
         value: fmt(dotReduced),
       });
     }
